@@ -7,7 +7,7 @@ on:
     tags-ignore:
       - 'release-*'
     paths:
-      - 'luci-app-wrtbwmon/**'
+      - 'luci-app-wrtbwmon-ng/**'
   pull_request:
     branches:
       - master
@@ -22,14 +22,14 @@ jobs:
     - name: Docker Build
       run: |
         mkdir bin
-        cp -rf ./luci-app-wrtbwmon ./bin/
+        cp -rf ./luci-app-wrtbwmon-ng ./bin/
         docker pull openwrtorg/sdk:x86-64-19.07-SNAPSHOT
         docker run --rm -u root -v "$(pwd)"/bin/:/home/build/openwrt/bin -v ${{ github.workspace }}/.github/workflows:/home/build/workflows openwrtorg/sdk:x86-64-19.07-SNAPSHOT /bin/sh /home/build/workflows/build.sh
     - name: Upload app
       uses: actions/upload-artifact@v2
       with:
-        name: luci-app-wrtbwmon
-        path: ./bin/packages/x86_64/base/*wrtbwmon*
+        name: luci-app-wrtbwmon-ng
+        path: ./bin/packages/x86_64/base/*wrtbwmon-ng*
         if-no-files-found: error
     - name: Upload Log
       if: ${{ always() }}

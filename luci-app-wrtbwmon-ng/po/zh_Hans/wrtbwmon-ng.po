@@ -51,8 +51,8 @@ msgid "Configure Options"
 msgstr "配置选项"
 
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:193
-msgid "Configure the default values for luci-app-wrtbwmon."
-msgstr "配置luci-app-wrtbwmon的默认值。"
+msgid "Configure the default values for luci-app-wrtbwmon-ng."
+msgstr "配置luci-app-wrtbwmon-ng的默认值。"
 
 #: htdocs/luci-static/resources/view/wrtbwmon/config.js:39
 msgid "Database path"
@@ -103,7 +103,7 @@ msgstr "初次记录"
 msgid "General settings"
 msgstr "通用设置"
 
-#: root/usr/share/rpcd/acl.d/luci-app-wrtbwmon.json:3
+#: root/usr/share/rpcd/acl.d/luci-app-wrtbwmon-ng.json:3
 msgid "Grant access to LuCI app wrtbwmon"
 msgstr "授予访问LuCI应用程序wrtbwmon的权限"
 

@@ -15,7 +15,7 @@ jobs:
     - name: Docker Build
       run: |
         mkdir bin
-        cp -rf ./luci-app-wrtbwmon ./bin/
+        cp -rf ./luci-app-wrtbwmon-ng ./bin/
         docker pull openwrtorg/sdk:x86-64-19.07-SNAPSHOT
         docker run --rm -u root -v "$(pwd)"/bin/:/home/build/openwrt/bin -v ${{ github.workspace }}/.github/workflows:/home/build/workflows openwrtorg/sdk:x86-64-19.07-SNAPSHOT /bin/sh /home/build/workflows/build.sh
     - name: Release
@@ -24,7 +24,7 @@ jobs:
       run: |
         set -x
         assets=()
-        for asset in ./bin/packages/x86_64/base/*wrtbwmon*.ipk; do
+        for asset in ./bin/packages/x86_64/base/*wrtbwmon-ng*.ipk; do
           assets+=("-a" "$asset")
         done
         tag_name=$(basename ${{github.ref}})

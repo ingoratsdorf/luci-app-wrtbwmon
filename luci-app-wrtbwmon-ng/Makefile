@@ -6,15 +6,15 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=luci-app-wrtbwmon
+PKG_NAME:=luci-app-wrtbwmon-ng
 PKG_VERSION:=2.0.7
 PKG_RELEASE:=1
 
 PKG_LICENSE:=Apache-2.0
 PKG_MAINTAINER:=
 
-LUCI_TITLE:=A Luci module that uses wrtbwmon to track bandwidth usage
-LUCI_DEPENDS:=+wrtbwmon
+LUCI_TITLE:=A Luci module that uses a modified version of wrtbwmon to track bandwidth usage
+LUCI_DEPENDS:=+wrtbwmon-ng
 LUCI_PKGARCH:=all
 
 include $(TOPDIR)/feeds/luci/luci.mk

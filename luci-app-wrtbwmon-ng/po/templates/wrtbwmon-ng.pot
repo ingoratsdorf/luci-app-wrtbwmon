@@ -51,7 +51,7 @@ msgid "Configure Options"
 msgstr ""
 
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:193
-msgid "Configure the default values for luci-app-wrtbwmon."
+msgid "Configure the default values for luci-app-wrtbwmon-ng."
 msgstr ""
 
 #: htdocs/luci-static/resources/view/wrtbwmon/config.js:39
@@ -103,7 +103,7 @@ msgstr ""
 msgid "General settings"
 msgstr ""
 
-#: root/usr/share/rpcd/acl.d/luci-app-wrtbwmon.json:3
+#: root/usr/share/rpcd/acl.d/luci-app-wrtbwmon-ng.json:3
 msgid "Grant access to LuCI app wrtbwmon"
 msgstr ""
 
