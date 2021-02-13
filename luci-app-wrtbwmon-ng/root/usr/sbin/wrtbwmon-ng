@@ -1,0 +1,172 @@
+#!/bin/sh
+#
+# Traffic logging tool for OpenWRT based routers
+#
+# This version has been created by Ingo Ratsdorf
+#
+# Based on original work wrtbwmon by Nicholas Yang
+# which is based on work from:
+#   - Emmanuel Brucy (e.brucy AT qut.edu.au),
+#   - Fredrik Erlandsson (erlis AT linux.nu)
+#
+
+
+# get config
+CONFIGPATH="/etc/wrtbwmon-ng.conf"
+SQLITEDB=$( awk '/database_path/ {print $2}' ${CONFIGPATH} | tr -d '"' | tr -d ',')
+[ -z "${SQLITEDB}" ] && echo "Using default database path" && SQLITEDB="/tmp/wrtbwmon-ng.sqlite"
+# Only argument is interface to be used. Need to use the lan or bridgerd lan interface, that's where all users are connected to
+LAN_IFACE=$( awk '/lan_iface/ {print $2}' ${CONFIGPATH} | tr -d '"' | tr -d ',')
+[ -z "${LAN_IFACE}" ] && echo "Using default interface" && LAN_IFACE="br-lan"
+UPDATEREQUENCY=$( awk '/frequency/ {print $2}' ${CONFIGPATH} | tr -d '"' | tr -d ',')
+[ ! "${UPDATEREQUENCY}" = '' ] && UPDATEREQUENCY="5"
+[ -z "${UPDATEREQUENCY}" ] && UPDATEREQUENCY="5"
+
+####################################
+# Setup SQLite db
+####################################
+if [ ! -f "${SQLITEDB}" ]; then
+  # if DB file does not exist, create it incl tables
+  echo DEBUG : Creating sqlite database ${SQLITEDB}
+  sqlite3 "${SQLITEDB}" "CREATE TABLE IF NOT EXISTS tracker (mac string, ip string, firstseen integer, lastseen integer, friendlyname string, groupname string, inrate integer, outrate integer);"
+  sqlite3 "${SQLITEDB}" "CREATE TABLE IF NOT EXISTS usage (mac string, hour integer, day integer, month integer, year integer, updatetick integer, inbytes integer, outbytes integer);"
+fi
+
+# Create the WRTBWMONNG CHAIN (it doesn't matter if it already exists)
+iptables -N WRTBWMONNG -w 2> /dev/null
+
+# MAIN LOOP
+while [ 1 ]; do
+
+  # Current date for collecting data
+  DATE=`date +"%s"`
+
+  # Add the WRTBWMONNG CHAIN to the FORWARD chain (if non existing)
+  iptables -L FORWARD --line-numbers -n -w | grep "WRTBWMONNG" | grep "1" > /dev/null
+  if [ $? -ne 0 ]; then
+    iptables -L FORWARD -n -w | grep "WRTBWMONNG" > /dev/null
+    if [ $? -eq 0 ]; then
+        echo "DEBUG : iptables chain misplaced, recreating it..."
+        iptables -D FORWARD -j WRTBWMONNG -w
+    fi
+    iptables -I FORWARD -j WRTBWMONNG -w
+  fi
+
+  # For each host in the ARP table
+  grep ${LAN_IFACE} /proc/net/arp | while read IP TYPE FLAGS MAC MASK IFACE
+  do
+    # Add iptable rules (if non-existing)
+    iptables -nL WRTBWMONNG -w | grep "${IP} " > /dev/null
+    if [ $? -ne 0 ]; then
+        iptables -I WRTBWMONNG -d ${IP} -j RETURN -w
+        iptables -I WRTBWMONNG -s ${IP} -j RETURN -w
+    fi
+  done
+
+  # Read and reset counters (argument -Z resets to zero)
+  TMP="/tmp/traffic$$.tmp"
+  iptables -L WRTBWMONNG -vnxZ -t filter -w > ${TMP}
+
+  grep -v "0x0" /proc/net/arp  | while read IP TYPE FLAGS MAC MASK IFACE
+  do
+    # Add new data. Count in Kbs to deal with 16 bits signed
+    # values (up to 2G only). Have to use temporary files because of crappy
+    # busybox shell (ash)
+
+    # Get around this problem with Solution 3: http://www.linuxprogrammingblog.com/pipe-in-bash-can-be-a-trap
+    IN=`
+    grep "${IP}" "${TMP}" | while read PKTS BYTES TARGET PROT OPT IFIN IFOUT SRC DST
+    do
+        if ([ "${DST}" = "${IP}" ] && [ "${BYTES}" != 0 ]); then
+            IN=$((${BYTES}/1000))
+            echo $IN
+        fi
+    done | tail -n 1
+    `
+
+    OUT=`
+    grep "${IP}" "${TMP}" | while read PKTS BYTES TARGET PROT OPT IFIN IFOUT SRC DST
+    do
+        if ([ "${SRC}" = "${IP}" ] && [ "${BYTES}" != 0 ]); then
+            OUT=$((${BYTES}/1000))
+            echo $OUT
+        fi
+    done | tail -n 1
+    `
+
+    # Make sure we don't get an arithmetic syntax error
+    [ "${IN}" == "" ] && IN=0
+    [ "${OUT}" == "" ] && OUT=0
+
+    IP=${IP}
+    if ([ ! ${IN} == 0 ] || [ ! ${OUT} == 0 ]);  then
+      # We have some new traffic for ${MAC}
+      echo "DEBUG : New traffic for ${MAC} since last update : ${IN}k:${OUT}k"
+
+      ##############################################
+      # update to SQLite database
+      ##############################################
+
+      # update tracker
+      INRATE=0
+      OUTRATE=0
+      LASTSEEN=$(sqlite3 "${SQLITEDB}" "SELECT lastseen FROM tracker WHERE mac='${MAC}';")
+      if [ -z "${LASTSEEN}" ] ; then
+        # MAC does not exist yet, fill db
+        echo "DEBUG : Insert new mac into tracking table: ${MAC}"
+        LASTSEEN=${DATE}
+        sqlite3 "${SQLITEDB}" "INSERT INTO tracker (mac, ip, firstseen, lastseen, friendlyname, groupname, inrate, outrate) VALUES ('${MAC}', '${IP}', ${DATE}, ${LASTSEEN}, '*', '*', ${INRATE}, ${OUTRATE});"
+      else
+        # MAC was seen before, update table
+        echo "DEBUG : Update mac in tracking table: ${MAC}"
+        # Calculate rate in Kbytes per second
+        if [ ${DATE} > ${LASTSEEN} ]; then
+          INRATE=$((IN/(DATE-LASTSEEN)))
+          OUTRATE=$((OUT/(DATE-LASTSEEN)))
+        fi
+        sqlite3 "${SQLITEDB}" "UPDATE tracker SET lastseen=${DATE}, ip='${IP}', inrate=${INRATE}, outrate=${OUTRATE} WHERE mac='${MAC}';"
+      fi
+
+      # We update the table in intervals set by the user as per crontab (could be minutely or hours, or whatever)
+      # But we compile anything that's less than hours in hourly data
+
+      # Get hour code for current hour
+      DATECHECKNOW=`date +\%Y-\%m-\%d-\%H -d @${DATE}`
+
+      CURRENTYEAR=${DATECHECKNOW:0:4}
+      CURRENTMONTH=${DATECHECKNOW:5:2}
+      CURRENTDAY=${DATECHECKNOW:8:2}
+      CURRENTHOUR=${DATECHECKNOW:11:2}
+
+      OLDIN=$(sqlite3 "${SQLITEDB}" "SELECT inbytes FROM usage WHERE mac='${MAC}' AND year=${CURRENTYEAR} AND month=${CURRENTMONTH} AND day=${CURRENTDAY} AND hour=${CURRENTHOUR};")
+      OLDOUT=$(sqlite3 "${SQLITEDB}" "SELECT outbytes FROM usage WHERE mac='${MAC}' AND year=${CURRENTYEAR} AND month=${CURRENTMONTH} AND day=${CURRENTDAY} AND hour=${CURRENTHOUR};")
+
+      if [ -z $OLDIN ]; then
+        # No entry yet, let's add one
+        # Structure: (mac string, hour integer, day integer, month integer, year integer, updatetick integer, inbytes integer, outbytes integer)
+        echo "DEBUG : New traffic for ${MAC} and no entry yet, adding into usage table...."
+        sqlite3 "${SQLITEDB}" "INSERT INTO usage (mac, hour, day, month, year, updatetick, inbytes, outbytes) VALUES ('${MAC}', $CURRENTHOUR, $CURRENTDAY, $CURRENTMONTH, $CURRENTYEAR, $DATE, $IN, $OUT);"
+      else
+        # Entry for the current hour, lets add up and next hour we will be up there with no entry
+        echo "DEBUG : New traffic for ${MAC} updating usage table...."
+        sqlite3 "${SQLITEDB}" "UPDATE usage SET inbytes=($OLDIN+$IN), outbytes=($OLDOUT+$OUT) WHERE mac='${MAC}' AND year=${CURRENTYEAR} AND month=${CURRENTMONTH} AND day=${CURRENTDAY} AND hour=${CURRENTHOUR};"
+      fi
+    else
+      # no change in traffic, need to update rate on the inactive MAC's and invalidate IP
+      # update tracker
+      LASTSEEN=$(sqlite3 "${SQLITEDB}" "SELECT lastseen FROM tracker WHERE mac='${MAC}';")
+      if [ -z "${LASTSEEN}" ] ; then
+        # Hmm, strange, the MAC is known but not in the tracker and no chnages to transfer, maybe some bug in DB or previous tracking?
+        sqlite3 "${SQLITEDB}" "INSERT INTO tracker (mac, ip, firstseen, lastseen, friendlyname, groupname, inrate, outrate) VALUES ('${MAC}', '${IP}', ${DATE}, ${DATE}, '*', '*', 0, 0);"
+      else
+        sqlite3 "${SQLITEDB}" "UPDATE tracker SET inrate=0, outrate=0, ip='${IP}' WHERE mac='${MAC}';"
+      fi
+    fi
+  done
+
+  # Remove temp iptables result table file
+  rm "${TMP}"
+
+  sleep ${UPDATEREQUENCY}
+
+done

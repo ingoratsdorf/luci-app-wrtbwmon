@@ -3,21 +3,17 @@
         "description": "Grant access to LuCI app wrtbwmon (NG)",
         "read": {
             "file": {
-                "/tmp/usage.db": ["read"],
-                "/etc/wrtbwmon.user": ["read"],
-                "/usr/sbin/wrtbwmon": ["exec"],
-                "/bin/cp": ["exec"],
-                "/etc/luci-wrtbwmon.conf": ["read"]
+                "/usr/sbin/wrtbwmon-ng": ["exec"],
+                "/usr/bin/sqlite3": ["exec"],
+                "/etc/luci-wrtbwmon-ng.conf": ["read"]
             },
             "uci": ["wrtbwmon-ng", "luci-app-wrtbwmon-ng"]
         },
         "write": {
             "file": {
-                "/bin/cat": ["exec"],
-                "/bin/rm": ["exec"],
-                "/bin/cp": ["exec"],
-                "/etc/luci-wrtbwmon.conf": ["write"],
-                "/etc/wrtbwmon.user": ["write"]
+                "/usr/sbin/wrtbwmon-ng": ["exec"],
+                "/usr/bin/sqlite3": ["exec"],
+                "/etc/luci-wrtbwmon-ng.conf": ["write"]
             },
             "uci": ["wrtbwmon-ng", "luci-app-wrtbwmon-ng"]
         }
