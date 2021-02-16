@@ -3,22 +3,22 @@ msgstr "Content-Type: text/plain; charset=UTF-8"
 
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:175
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:585
-msgid "10 seconds"
+msgid "5 seconds"
 msgstr ""
 
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:175
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:583
-msgid "2 seconds"
+msgid "10 seconds"
 msgstr ""
 
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:175
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:586
-msgid "30 seconds"
+msgid "15 seconds"
 msgstr ""
 
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:175
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:584
-msgid "5 seconds"
+msgid "30 seconds"
 msgstr ""
 
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:577
@@ -60,10 +60,6 @@ msgstr ""
 
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:176
 msgid "Default More Columns"
-msgstr ""
-
-#: htdocs/luci-static/resources/view/wrtbwmon/details.js:174
-msgid "Default Protocol"
 msgstr ""
 
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:175
@@ -139,10 +135,6 @@ msgstr ""
 msgid "Multiple of Unit"
 msgstr ""
 
-#: htdocs/luci-static/resources/view/wrtbwmon/details.js:541
-msgid "Protocol:"
-msgstr ""
-
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:563
 msgid "Reset Database"
 msgstr ""
@@ -175,8 +167,7 @@ msgstr ""
 
 #: htdocs/luci-static/resources/view/wrtbwmon/config.js:39
 msgid ""
-"This box is used to select the Database path, which is /tmp/usage.db by "
-"default."
+"This box is used to select the Database path, which is /tmp/usage.sqlite by default."
 msgstr ""
 
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:29
@@ -235,26 +226,6 @@ msgstr ""
 msgid "Usage - Configuration"
 msgstr ""
 
-#: htdocs/luci-static/resources/view/wrtbwmon/custom.js:15
-msgid "Usage - Custom User File"
-msgstr ""
-
 #: htdocs/luci-static/resources/view/wrtbwmon/details.js:537
 msgid "Usage - Details"
-msgstr ""
-
-#: htdocs/luci-static/resources/view/wrtbwmon/details.js:180
-msgid "Use DSL Bandwidth"
-msgstr ""
-
-#: luasrc/controller/wrtbwmon.lua:19
-msgid "User file"
-msgstr ""
-
-#: htdocs/luci-static/resources/view/wrtbwmon/details.js:174
-msgid "ipv4"
-msgstr ""
-
-#: htdocs/luci-static/resources/view/wrtbwmon/details.js:174
-msgid "ipv6"
 msgstr ""

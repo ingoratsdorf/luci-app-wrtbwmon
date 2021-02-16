@@ -6,20 +6,8 @@
 'require validation';
 
 var cachedData = [];
+// our configuration file
 var luciConfig = '/etc/luci-wrtbwmon.conf';
-var hostNameFile = '/etc/wrtbwmon.user';
-
-var callLuciDHCPLeases = rpc.declare({
-    object: 'luci-rpc',
-    method: 'getDHCPLeases',
-    expect: { '': {} }
-});
-
-var callLuciDSLStatus = rpc.declare({
-    object: 'luci-rpc',
-    method: 'getDSLStatus',
-    expect: { '': {} }
-});
 
 function $(tid) {
     return document.getElementById(tid);
@@ -28,7 +16,6 @@ function $(tid) {
 function clickToResetDatabase(settings) {
     if (confirm(_('This will delete the database file. Are you sure?'))) {
         getPath().then(function(res) {
-            var db = settings.protocol == 'ipv4' ? res : renameFile(res, '6');
             fs.exec('/bin/rm', [db]).then(function() {
                 updateData($('traffic'), $('updated'), $('updating'), settings, true);
             });
@@ -180,13 +167,11 @@ function handleConfig(ev) {
                 body;
 
             arglist = [
-                [ui.Select, _('Default Protocol'), 'ipv4', { 'ipv4': _('ipv4'), 'ipv6': _('ipv6') }, {}, ''],
                 [ui.Select, _('Default Refresh Interval'), '5', { '-1': _('Disabled'), '2': _('2 seconds'), '5': _('5 seconds'), '10': _('10 seconds'), '30': _('30 seconds') }, { sort: ['-1', '2', '5', '10', '30'] }, ''],
                 [ui.Checkbox, _('Default More Columns'), false, { value_enabled: true, value_disabled: false }, ''],
                 [ui.Checkbox, _('Show Zeros'), true, { value_enabled: true, value_disabled: false }, ''],
                 [ui.Checkbox, _('Transfer Speed in Bits'), false, { value_enabled: true, value_disabled: false }, ''],
                 [ui.Select, _('Multiple of Unit'), '1000', { '1000': _('SI - 1000'), '1024': _('IEC - 1024') }, {}, ''],
-                [ui.Checkbox, _('Use DSL Bandwidth'), false, { value_enabled: true, value_disabled: false }, ''],
                 [ui.Textfield, _('Upstream Bandwidth'), '100', { datatype: 'ufloat' }, 'Mbps'],
                 [ui.Textfield, _('Downstream Bandwidth'), '100', { datatype: 'ufloat' }, 'Mbps'],
                 [ui.DynamicList, _('Hide MAC Addresses'), [], '', { datatype: 'macaddr' }, '']
@@ -596,9 +581,9 @@ return L.view.extend({
                             'change': clickToSelectInterval.bind(this, settings)
                         }, [
                             E('option', { 'value': '-1' }, _('Disabled')),
-                            E('option', { 'value': '2' }, _('2 seconds')),
                             E('option', { 'value': '5' }, _('5 seconds')),
                             E('option', { 'value': '10' }, _('10 seconds')),
+                            E('option', { 'value': '15' }, _('15 seconds')),
                             E('option', { 'value': '30' }, _('30 seconds'))
                         ])
                     ])
@@ -645,7 +630,6 @@ return L.view.extend({
                 node.querySelector('[id="updated"]'),
                 node.querySelector('[id="updating"]'),
                 node.querySelector('[id="selectInterval"]').value = settings.interval,
-                node.querySelector('[id="selectProtocol"]').value = settings.protocol,
                 node.querySelector('[id="showMore"]').checked = settings.showMore,
                 node.querySelectorAll('.showMore').forEach(function(e) { settings.showMore ? e.classList.remove('hide') : e.classList.add('hide'); })
             ])

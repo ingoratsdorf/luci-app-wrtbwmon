@@ -14,7 +14,4 @@ function index()
 	entry({"admin", "network", "usage", "config"},
 		view("wrtbwmon-ng/config"),
 		_("Configuration"), 20)
-	entry({"admin", "network", "usage", "custom"},
-		view("wrtbwmon-ng/custom"),
-		_("User file"), 30)
 end
